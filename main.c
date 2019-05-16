@@ -8,6 +8,8 @@
 #include <pwd.h>
 #include <grp.h>
 
+#include "linked_list.h"
+
 #define SOCKET_NAME "/dev/log"
 #define BUFFER_SIZE 1024
 #define LOGIN_NAME_SIZE 64
@@ -18,6 +20,11 @@ int main() {
     int ret, connection_socket, data_socket;
     struct sockaddr_un name;
     char buffer[BUFFER_SIZE], login[LOGIN_NAME_SIZE];
+    tList list;
+    listInit(&list);
+
+    exit(1);
+
 
     if ((ret = changeOwner(SOCKET_NAME)) < 0) {
         fprintf(stderr, "WARNING: Could not change the ownership for \"%s\"\n", SOCKET_NAME);

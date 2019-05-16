@@ -1,7 +1,7 @@
 CC=gcc
 FLAGS=#-Werror -Wall -pedantic
 TARGET=main
-MODULES=
+MODULES=linked_list
 OBJS = $(addprefix obj/, $(addsuffix .o,$(MODULES)))
 
 all: $(TARGET)
