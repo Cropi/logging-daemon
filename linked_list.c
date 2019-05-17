@@ -70,6 +70,9 @@ void insertFirst(tList *l, char *message) {
     l->head = newElem;
 }
 
+/*
+ * Dealloc the elements of the list
+ */
 void destroyList(tList *l) {
     tElem *tmp;
     while((tmp = l->head) != NULL) {
@@ -81,6 +84,9 @@ void destroyList(tList *l) {
 
 }
 
+/*
+ * Check if an element with content of message exists within the list
+ */
 tElem * search(tList *l, char *message, int index) {
     tElem *tmp = l->head;
     while(tmp != NULL) {
@@ -91,6 +97,9 @@ tElem * search(tList *l, char *message, int index) {
     return NULL;
 }
 
+/*
+ * Return an element with the largest occurence
+ */
 tElem *getMostPopular(tList *l) {
     tElem *tmp = l->head;
     tElem *ret = tmp;
@@ -104,6 +113,9 @@ tElem *getMostPopular(tList *l) {
     return ret;
 }
 
+/*
+ * Only for debugging purpose. Prints elements of a list.
+ */
 void print(tList *l) {
     tElem *tmp = l->head;
     while(tmp != NULL) {

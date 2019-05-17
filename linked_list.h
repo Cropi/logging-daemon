@@ -6,10 +6,16 @@
 #include <limits.h>
 #include <string.h>
 
+/***********************/
+/***** LINKED LIST *****/
+/***********************/
 typedef struct list {
     struct element *head;
 } tList;
 
+/***********************/
+/* LINKED LIST ELEMENT */
+/***********************/
 typedef struct element {
     int counter;
     char *messageHead;

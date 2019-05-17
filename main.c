@@ -4,10 +4,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
-#include <sys/types.h>
 #include <sys/stat.h>
-#include <pwd.h>
-#include <grp.h>
 #include <signal.h>
 #include <errno.h>
 
@@ -15,15 +12,38 @@
 
 #define SOCKET_NAME "/dev/log"
 #define BUFFER_SIZE 1024
-#define LOGIN_NAME_SIZE 64
 #define PENDING_CONNECTIONS_QUEUE 10
 
+
 int changeOwner(const char *pathName);
+
+/*
+ * Changes the ownership of a file(socket) specified by pathName
+ * to be readable/writeable for all
+ */
 int changeMod(const char *pathName);
+
+/*
+ * When a SIGINT is invoked by the user it sets the isOver
+ * global variable to true. It indicates that the infinite loop
+ * breaks inside the main function which forces the program to finish its task.
+ */
 void signalHandler(int sig);
+
+/*
+ * Prints out which logging message has been received the most as well as its count.
+ * It also stores above mentioned information into the specified files.
+ * Note: If there are multiple strings with the same content the last one
+ * is returned(the latest added logging message).
+ */
 void evaluateResults(tList *list, int argc, char *argv[]);
+
+/*
+ * Opens the file specified by fileName and appends the content of message into it
+ */
 int printResultsToFile(char *fileName, char *message);
 
+/* Indicates whether it is time to break the main loop  */
 int isOver = 0;
 
 int main(int argc, char *argv[]) {
@@ -36,7 +56,7 @@ int main(int argc, char *argv[]) {
     if (signal(SIGINT, signalHandler) == SIG_ERR)
         fprintf(stderr, "WARNING: Can't catch SIGINT\n");
 
-
+    /* delete a name and possibly the file it refers to */
     unlink(SOCKET_NAME);
 
     /* Create local socket. */
@@ -68,6 +88,9 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
+    /* Change mods for the socket to be readable/writeable for all. It is required for logger
+     * command-line program to utilize it without sudo permission.
+     */
     if (changeMod(SOCKET_NAME) < 0) {
         fprintf(stderr, "WARNING: Could not change mod for %s\n", SOCKET_NAME);
     }
@@ -86,10 +109,8 @@ int main(int argc, char *argv[]) {
     }
 
     /* This is the main loop for handling connections. */
-
     while ( !isOver ) {
         memset(buffer, 0, BUFFER_SIZE);
-        /* Wait for incoming connection. */
 
         struct timeval tv;
         int activity;
@@ -100,20 +121,25 @@ int main(int argc, char *argv[]) {
         FD_ZERO(&readfds);
         FD_SET(connection_socket, &readfds);
 
-        //wait for an activity on one of the sockets
+        //wait for an activity
         activity = select( connection_socket + 1 , &readfds , NULL , NULL , &tv);
 
         if ((activity < 0) && (errno!=EINTR)) {
             printf("select error");
         }
+        /* time interval has ran out. Jump to the beginning of the loop or break. */
         if (activity == 0) {
             continue;
         }
 
+        /* If SIGINT has been pressed. */
         if (isOver)
             break;
-        if (FD_ISSET(connection_socket, &readfds))
-        {
+
+        /* A client has entered and is ready to send information */
+        if (FD_ISSET(connection_socket, &readfds)) {
+
+            /* Wait for incoming connection. */
             data_socket = accept(connection_socket, NULL, NULL);
             if (data_socket == -1) {
                 perror("accept");
@@ -134,12 +160,13 @@ int main(int argc, char *argv[]) {
             if (buffer[0] == '\0')
                 continue;
 
-            /* Printf buffer*/
+            /* Printf buffer to stdout and also to file(s).*/
             printf("Log message: %s", buffer);
             for(int i = 1; i < argc; i++) {
                 if (printResultsToFile(argv[i], buffer) < 0)
                     fprintf(stderr, "Could not save data to %s\n", argv[i]);
             }
+            /* Save the message for further use */
             insertFirst(&list, buffer);
 
             close(data_socket);
@@ -161,8 +188,6 @@ void evaluateResults(tList *list, int argc, char *argv[]) {
     // print(&list);
     tElem *mostPopular = getMostPopular(list);
     if (mostPopular) {
-        char login[LOGIN_NAME_SIZE];
-        getlogin_r(login, LOGIN_NAME_SIZE);
         printf("%d --> %s", mostPopular->counter, mostPopular->messageBody);
     }
     else {
