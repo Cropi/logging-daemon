@@ -4,7 +4,7 @@ Syslog is a standard for message logging. It allows separation of the software t
 
 # logging-daemon for demo purpose - [ASSIGNMENT](https://github.com/radosroka/task)
 
-A simple program which creates a /dev/log socket and ensures that is readable/writeable for all users. Each log message is forwarded to the standard output and in case of the program has been executed with at least 1 additional parameter it also saves logs into these files.
+A simple program which creates a /dev/log socket and ensures to be readable/writeable for all users. Each log message is forwarded to the standard output and in case of the program has been executed with at least 1 additional parameter it also saves logs into these files.
 
 It is basically the server from a client-server application which waits until a client is connected. Furthermore, each log message is stored in a linked list. A large number of different things happen when a SIGINT signal is invoked:
 * The main loop is interrupted => no more logging messages are being accepted.
