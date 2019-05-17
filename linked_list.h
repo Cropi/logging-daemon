@@ -6,20 +6,21 @@
 #include <limits.h>
 #include <string.h>
 
-typedef struct List {
+typedef struct list {
     struct element *head;
 } tList;
 
 typedef struct element {
     int counter;
-    char *message;
+    char *messageHead;
+    char *messageBody;
     struct element *next;
 } tElem;
 
 void listInit(tList *l);
 void insertFirst(tList *l,  char *message);
 void destroyList(tList *l);
-tElem * search(tList *l, char *message);
+tElem * search(tList *l, char *message, int index);
 tElem *getMostPopular(tList *l);
 void print(tList *l);
 

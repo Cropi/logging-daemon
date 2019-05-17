@@ -4,11 +4,30 @@ void listInit(tList *l) {
     l->head = NULL;
 }
 
+/* The algorithm of our insert function is the following:
+ * 1. Divide the logging message into head and body
+ * 2. Check if a message with the corresponding body exists
+ *      If yes => increment its counter
+ *             => exit function
+ * 3.   If not => Allocate space for the entire structure + messageHead + messageBody
+ * 4. Modify the linked list
+ */
 void insertFirst(tList *l, char *message) {
+
+    int whiteSpaceCount = 0, index;
+    for(index = 0; index < strlen(message) && whiteSpaceCount != 3; index++) {
+        if (message[index] == '\0') {
+            fprintf(stderr, "WARNING: Invalid logger message syntax\n");
+            return;
+        }
+        else if (message[index] == ' ')
+            whiteSpaceCount++;
+    }
+
     /*
      * If the string exists then only increment its count
      */
-    tElem *actual = search(l, message);
+    tElem *actual = search(l, message, index);
     if (actual) {
         actual->counter++;
         return;
@@ -23,14 +42,30 @@ void insertFirst(tList *l, char *message) {
         return ;
     }
 
+    /* Set up counter */
     newElem->counter = 1;
-    newElem->message = (char *) malloc(sizeof(char) * (strlen(message) + 1));
-    if (newElem->message == NULL) {
+    /* Allocate space for message header */
+    newElem->messageHead = (char *) malloc(sizeof(char) * index);
+    if (newElem->messageHead == NULL) {
         fprintf(stderr, "WARNING: Could not allocate space for another message\n");
         free(newElem);
         return ;
     }
-    strcpy(newElem->message, message);
+    strncpy(newElem->messageHead, message, index);
+    newElem->messageHead[index-1] = 0;
+
+    /* Allocate space for message body */
+    newElem->messageBody = (char *) malloc(sizeof(char) * (strlen(message) - index + 1));
+    if (newElem->messageBody == NULL) {
+        fprintf(stderr, "WARNING: Could not allocate space for another message\n");
+        free(newElem->messageHead);
+        free(newElem);
+        return ;
+    }
+    strncpy(newElem->messageBody, message+index, strlen(message) - index);
+    newElem->messageBody[strlen(message) - index] = '\0';
+
+    /* Set up the new element as head of the list */
     newElem->next = l->head;
     l->head = newElem;
 }
@@ -39,16 +74,17 @@ void destroyList(tList *l) {
     tElem *tmp;
     while((tmp = l->head) != NULL) {
         l->head = l->head->next;
-        free(tmp->message);
+        free(tmp->messageHead);
+        free(tmp->messageBody);
         free(tmp);
     }
 
 }
 
-tElem * search(tList *l, char *message) {
+tElem * search(tList *l, char *message, int index) {
     tElem *tmp = l->head;
     while(tmp != NULL) {
-        if (strcmp(tmp->message, message) == 0)
+        if (strcmp(tmp->messageBody, message+index) == 0)
             return tmp;
         tmp = tmp->next;
     }
@@ -71,7 +107,7 @@ tElem *getMostPopular(tList *l) {
 void print(tList *l) {
     tElem *tmp = l->head;
     while(tmp != NULL) {
-        printf("%2d: %s\n", tmp->counter, tmp->message);
+        printf("%2d: %s %s", tmp->counter, tmp->messageHead, tmp->messageBody);
         tmp = tmp->next;
     }
 }
