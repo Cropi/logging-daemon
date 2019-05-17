@@ -13,7 +13,7 @@ It is basically the server from a client-server application which waits until a 
 * and finally deallocation of used resources.
 
 ## Compilation
-* Make sure you have g++14 available on your computer. 
+* Make sure you have gcc available on your computer. 
 * ```make```
 * ```unlink /dev/log```
 * ```systemctl stop rsyslog```
