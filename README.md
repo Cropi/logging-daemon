@@ -20,6 +20,6 @@ It is basically the server from a client-server application which waits until a 
 * ```systemctl stop systemd-journald```
 
 ## Run
-sudo ./logging-daemon /tmp/output1.log /tmp/output2.log /tmp/output3.log
+```sudo ./logging-daemon /tmp/output1.log /tmp/output2.log /tmp/output3.log```
 
 Create log message by [logger](https://linux.die.net/man/1/logger) command.
