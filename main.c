@@ -148,6 +148,7 @@ int main(int argc, char *argv[]) {
 
 
     evaluateResults(&list, argc, argv);
+    destroyList(&list);
 
     close(connection_socket);
     unlink(SOCKET_NAME);
