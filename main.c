@@ -9,6 +9,7 @@
 #include <pwd.h>
 #include <grp.h>
 #include <signal.h>
+#include <errno.h>
 
 #include "linked_list.h"
 
@@ -20,14 +21,16 @@
 int changeOwner(const char *pathName);
 int changeMod(const char *pathName);
 void signalHandler(int sig);
+void evaluateResults(tList *list, int argc, char *argv[]);
+int printResultsToFile(char *fileName, char *message);
 
-tList list;
-extern int argc;
+int isOver = 0;
 
 int main(int argc, char *argv[]) {
     int ret, connection_socket, data_socket;
     struct sockaddr_un name;
     char buffer[BUFFER_SIZE];
+    tList list;
     listInit(&list);
 
     if (signal(SIGINT, signalHandler) == SIG_ERR)
@@ -59,6 +62,7 @@ int main(int argc, char *argv[]) {
 
     /* Bind socket to socket name. */
     ret = bind(connection_socket, (const struct sockaddr *) &name, sizeof(struct sockaddr_un));
+
     if (ret == -1) {
         perror("bind");
         exit(EXIT_FAILURE);
@@ -82,44 +86,114 @@ int main(int argc, char *argv[]) {
     }
 
     /* This is the main loop for handling connections. */
-    for (;;) {
+
+    while ( !isOver ) {
         memset(buffer, 0, BUFFER_SIZE);
         /* Wait for incoming connection. */
-        data_socket = accept(connection_socket, NULL, NULL);
-        if (data_socket == -1) {
-            perror("accept");
-            exit(EXIT_FAILURE);
+
+        struct timeval tv;
+        int activity;
+        fd_set readfds;
+
+        tv.tv_sec = 1;
+        tv.tv_usec = 0;
+        FD_ZERO(&readfds);
+        FD_SET(connection_socket, &readfds);
+
+        //wait for an activity on one of the sockets
+        activity = select( connection_socket + 1 , &readfds , NULL , NULL , &tv);
+
+        if ((activity < 0) && (errno!=EINTR)) {
+            printf("select error");
         }
-
-        /* Wait for next data packet. */
-        ret = read(data_socket, buffer, BUFFER_SIZE);
-        if (ret == -1) {
-            perror("read");
-            exit(EXIT_FAILURE);
-        }
-
-        /* Ensure buffer is 0-terminated. */
-        buffer[BUFFER_SIZE - 1] = 0;
-
-        /* If the logging message is empty */
-        if (buffer[0] == '\0')
+        if (activity == 0) {
             continue;
+        }
 
-        /* Printf buffer*/
-        printf("Log message: %s", buffer);
-        insertFirst(&list, buffer);
+        if (isOver)
+            break;
+        if (FD_ISSET(connection_socket, &readfds))
+        {
+            data_socket = accept(connection_socket, NULL, NULL);
+            if (data_socket == -1) {
+                perror("accept");
+                exit(EXIT_FAILURE);
+            }
 
-        close(data_socket);
+            /* Wait for next data packet. */
+            ret = read(data_socket, buffer, BUFFER_SIZE);
+            if (ret == -1) {
+                perror("read");
+                exit(EXIT_FAILURE);
+            }
+
+            /* Ensure buffer is 0-terminated. */
+            buffer[BUFFER_SIZE - 1] = 0;
+
+            /* If the logging message is empty */
+            if (buffer[0] == '\0')
+                continue;
+
+            /* Printf buffer*/
+            printf("Log message: %s", buffer);
+            for(int i = 1; i < argc; i++) {
+                if (printResultsToFile(argv[i], buffer) < 0)
+                    fprintf(stderr, "Could not save data to %s\n", argv[i]);
+            }
+            insertFirst(&list, buffer);
+
+            close(data_socket);
+        }
     }
 
-    close(connection_socket);
 
-    /* Unlink the socket. */
+    evaluateResults(&list, argc, argv);
+
+    close(connection_socket);
     unlink(SOCKET_NAME);
 
-    destroyList(&list);
-
     exit(EXIT_SUCCESS);
+}
+
+void evaluateResults(tList *list, int argc, char *argv[]) {
+    printf("\n");
+    // print(&list);
+    tElem *mostPopular = getMostPopular(list);
+    if (mostPopular) {
+        char login[LOGIN_NAME_SIZE];
+        getlogin_r(login, LOGIN_NAME_SIZE);
+        printf("%d --> %s", mostPopular->counter, mostPopular->messageBody);
+    }
+    else {
+        printf("Nothing to print\n");
+    }
+    printf("The END!\n");
+
+
+    char count[8];
+    sprintf(count, "%d", mostPopular->counter);
+    for(int i = 1; i < argc; i++) {
+        if (printResultsToFile(argv[i], count) < 0)
+            fprintf(stderr, "Could not save data to %s\n", argv[i]);
+        if (printResultsToFile(argv[i], " --> ") < 0)
+            fprintf(stderr, "Could not save data to %s\n", argv[i]);
+        if (printResultsToFile(argv[i], mostPopular->messageBody) < 0)
+            fprintf(stderr, "Could not save data to %s\n", argv[i]);
+    }
+}
+
+int printResultsToFile(char *fileName, char *message) {
+    // Only appends to a file specified by fileName, DOES NOT rewrites it
+    FILE *f = fopen(fileName, "a+");
+
+    if (f == NULL) {
+        return -1;
+    }
+
+    fprintf(f, "%s", message);
+
+    fclose(f);
+    return 0;
 }
 
 int changeOwner(const char *pathName) {
@@ -148,19 +222,6 @@ int changeMod(const char *pathName) {
 
 void signalHandler(int sig) {
     if (sig == SIGINT) {
-        printf("\n");
-        print(&list);
-        tElem *mostPopular = getMostPopular(&list);
-        if (mostPopular) {
-            char login[LOGIN_NAME_SIZE];
-            getlogin_r(login, LOGIN_NAME_SIZE);
-            printf("%d --> %s", mostPopular->counter, mostPopular->messageBody);
-        }
-        else {
-            printf("Nothing to print\n");
-        }
-        destroyList(&list);
-        printf("The END!\n");
-        exit(EXIT_SUCCESS);
+        isOver = 1;
     }
 }
