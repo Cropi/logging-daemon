@@ -1,5 +1,6 @@
 *.txt
 main
-loggin-daemon
+logging-daemon
 *.o
 obj/
+*.log

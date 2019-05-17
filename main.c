@@ -161,7 +161,7 @@ int main(int argc, char *argv[]) {
                 continue;
 
             /* Printf buffer to stdout and also to file(s).*/
-            printf("Log message: %s", buffer);
+            printf("%s", buffer);
             for(int i = 1; i < argc; i++) {
                 if (printResultsToFile(argv[i], buffer) < 0)
                     fprintf(stderr, "Could not save data to %s\n", argv[i]);
@@ -205,6 +205,8 @@ void evaluateResults(tList *list, int argc, char *argv[]) {
             fprintf(stderr, "Could not save data to %s\n", argv[i]);
         if (printResultsToFile(argv[i], mostPopular->messageBody) < 0)
             fprintf(stderr, "Could not save data to %s\n", argv[i]);
+
+        chmod(argv[i], S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
     }
 }
 
