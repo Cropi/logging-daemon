@@ -2,7 +2,7 @@
 
 Syslog is a standard for message logging. It allows separation of the software that generates messages, the system that stores them, and the software that reports and analyzes them. Each message is labeled with a facility code, indicating the software type generating the message, and assigned a severity level. 
 
-# logging-daemon for demo purpose
+# logging-daemon for demo purpose - [ASSIGNMENT](https://github.com/radosroka/task)
 
 A simple program which creates a /dev/log socket and ensures that is readable/writeable for all users. Each log message is forwarded to the standard output and in case of the program has been executed with at least 1 additional parameter it also saves logs into these files.
 
