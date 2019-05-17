@@ -1,13 +1,13 @@
 CC=gcc
 FLAGS=#-Werror -Wall -pedantic
-TARGET=main
+TARGET=logging-daemon
 MODULES=linked_list
 OBJS = $(addprefix obj/, $(addsuffix .o,$(MODULES)))
 
 all: $(TARGET)
 
-$(TARGET): $(TARGET).c $(OBJS)
-	$(CC) $(FLAGS) $(OBJS) $(TARGET).c -o $@
+$(TARGET): main.c $(OBJS)
+	$(CC) $(FLAGS) $(OBJS) main.c -o $@
 
 obj/%.o : %.c %.h
 	mkdir -p obj
